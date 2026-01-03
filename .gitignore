@@ -1,0 +1,15 @@
+# Private files
+.beads
+.aikit
+.claude
+.opencode
+docs/
+document/
+AGENTS.md
+.github/workflows/
+
+# Node
+node_modules/
+
+# Build
+dist/

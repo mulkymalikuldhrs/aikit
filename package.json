@@ -1,0 +1,71 @@
+{
+  "name": "@tdsoft-tech/aikit",
+  "version": "0.1.20",
+  "description": "Open-source AI coding agent toolkit for OpenCode - skills, agents, commands, tools, and plugins",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "aikit": "./dist/cli.js",
+    "aikit-mcp": "./dist/mcp-server.js"
+  },
+  "files": [
+    "dist/",
+    "templates/",
+    "CHANGELOG.md",
+    "README.md",
+    ".githooks/"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "start": "node dist/cli.js",
+    "lint": "eslint src --ext .ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "prepare": "node scripts/postinstall.js"
+  },
+  "keywords": [
+    "opencode",
+    "ai",
+    "coding",
+    "agent",
+    "skills",
+    "cli",
+    "beads"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "@tdsoft-tech/aikit": "^0.1.2",
+    "@types/diff": "^7.0.2",
+    "aikit": "^0.0.1",
+    "chalk": "^5.3.0",
+    "chokidar": "^4.0.1",
+    "commander": "^12.1.0",
+    "diff": "^8.0.2",
+    "fast-xml-parser": "^4.3.2",
+    "figma-developer-mcp": "^0.6.4",
+    "find-process": "^2.0.0",
+    "glob": "^10.3.10",
+    "gray-matter": "^4.0.3",
+    "inquirer": "^9.2.12",
+    "js-yaml": "^4.1.0",
+    "open": "^10.1.0",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/inquirer": "^9.0.7",
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^20.10.0",
+    "eslint": "^8.55.0",
+    "tsup": "^8.0.1",
+    "typescript": "^5.3.0",
+    "vitest": "^1.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
