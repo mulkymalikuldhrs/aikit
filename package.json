@@ -1,6 +1,6 @@
 {
   "name": "@tdsoft-tech/aikit",
-  "version": "0.1.20",
+  "version": "0.1.29",
   "description": "Open-source AI coding agent toolkit for OpenCode - skills, agents, commands, tools, and plugins",
   "type": "module",
   "main": "dist/index.js",
@@ -35,8 +35,8 @@
     "cli",
     "beads"
   ],
-  "author": "",
-  "license": "MIT",
+  "author": "TDSoft / AIKit",
+  "license": "SEE LICENSE IN LICENSE",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
     "@tdsoft-tech/aikit": "^0.1.2",
