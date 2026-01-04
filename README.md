@@ -290,7 +290,6 @@ If you find AIKit useful, please consider supporting us! Your support helps us:
 | Support Type | Link | Description |
 |--------------|------|-------------|
 | ⭐ **Star on GitHub** | [Star this repo](https://github.com/tdsoft-technology/aikit) | It's free and helps others discover AIKit! |
-| ☕ **Buy Me a Coffee** | [Support development](https://ko-fi.com) | One-time donation (link coming soon) |
 | 💬 **Join Discussions** | [GitHub Discussions](https://github.com/tdsoft-technology/aikit/discussions) | Ask questions, share ideas |
 
 ---
