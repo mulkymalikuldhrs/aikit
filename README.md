@@ -345,3 +345,8 @@ Built with ❤️ by the open-source community.
 Made with 💜 by [TDSoft Technology](https://github.com/tdsoft-technology)
 
 </div>
+
+
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=tdsoft-technology/aikit.git&type=date&legend=top-left)](https://www.star-history.com/#tdsoft-technology/aikit.git&type=date&legend=top-left)
