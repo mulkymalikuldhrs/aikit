@@ -40,6 +40,16 @@ Perfect for developers who want to:
 
 ---
 
+### 🎬 Quick Demo
+
+<div align="center">
+
+<img src="assets/202601041506.gif" alt="AIKit Demo" width="800"/>
+
+</div>
+
+---
+
 ## 🎯 Key Features
 
 ### 🧠 Specialized Skills
@@ -290,6 +300,7 @@ If you find AIKit useful, please consider supporting us! Your support helps us:
 | Support Type | Link | Description |
 |--------------|------|-------------|
 | ⭐ **Star on GitHub** | [Star this repo](https://github.com/tdsoft-technology/aikit) | It's free and helps others discover AIKit! |
+| ☕ **Buy Me a Coffee** | [Support development](https://ko-fi.com) | One-time donation (link coming soon) |
 | 💬 **Join Discussions** | [GitHub Discussions](https://github.com/tdsoft-technology/aikit/discussions) | Ask questions, share ideas |
 
 ---
@@ -321,8 +332,8 @@ AIKit is available under a dual-license model:
 - [View Commercial License](COMMERCIAL_LICENSE.md)
 
 **For commercial licensing inquiries:**
-📧 contact@tdsoft.vn
-🌐 https://tdsoft.vn
+📧 dev@tdsoft.tech or duypnt23@gmail.com
+🌐 https://tdsoft.tech
 
 ---
 
@@ -345,8 +356,3 @@ Built with ❤️ by the open-source community.
 Made with 💜 by [TDSoft Technology](https://github.com/tdsoft-technology)
 
 </div>
-
-
-## Star History
-
-[![Star History Chart](https://api.star-history.com/svg?repos=tdsoft-technology/aikit.git&type=date&legend=top-left)](https://www.star-history.com/#tdsoft-technology/aikit.git&type=date&legend=top-left)
