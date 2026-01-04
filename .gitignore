@@ -8,6 +8,10 @@ document/
 AGENTS.md
 .github/workflows/
 
+# System files
+.DS_Store
+Thumbs.db
+
 # Node
 node_modules/
 

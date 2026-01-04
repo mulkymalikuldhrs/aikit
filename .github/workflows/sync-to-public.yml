@@ -1,0 +1,88 @@
+name: Sync to Public Repository
+
+on:
+  push:
+    tags:
+      - 'v*'  # Trigger on version tags like v0.1.20, v0.2.0, etc.
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Push to public repo
+        env:
+          PAT_TOKEN: ${{ secrets.PUBLIC_REPO_SYNC_TOKEN }}
+        run: |
+          git config --global user.name "dpnt23"
+          git config --global user.email "duypnt23@gmail.com"
+
+          # Debug: Check if token is set (without revealing it)
+          if [ -z "$PAT_TOKEN" ]; then
+            echo "ERROR: PAT_TOKEN is not set!"
+            exit 1
+          fi
+          echo "Token is set (length: ${#PAT_TOKEN} characters)"
+
+          # Clear any existing credentials that might override our PAT
+          git config --local --unset http.https://github.com/.extraheader || true
+
+          # Get version from package.json or tag
+          VERSION=$(node -p "require('./package.json').version")
+          echo "📦 Releasing version: $VERSION"
+
+          # Add public remote and fetch main branch
+          echo "📡 Fetching public repo main branch..."
+          git remote add public https://${PAT_TOKEN}@github.com/tdsoft-technology/aikit.git
+          git fetch public main
+
+          # Create release branch from PUBLIC repo's main (not private)
+          echo "📋 Creating release branch from public main..."
+          git checkout -b release-branch public/main
+
+          # Copy all files from private main, then remove private ones
+          echo "📦 Syncing files from private repo..."
+          git checkout origin/main -- .
+
+          # Remove private files
+          echo "🗑️ Removing private files..."
+          git rm -rf .beads .aikit .claude .opencode docs document AGENTS.md .github/ .DS_Store || true
+
+          # Create .gitignore for public repo
+          cat > .gitignore << 'EOF'
+          # Private files
+          .beads
+          .aikit
+          .claude
+          .opencode
+          docs/
+          document/
+          AGENTS.md
+          .github/workflows/
+
+          # System files
+          .DS_Store
+          Thumbs.db
+
+          # Node
+          node_modules/
+
+          # Build
+          dist/
+          EOF
+          git add .gitignore
+
+          # Create release commit
+          git commit -m "Release $VERSION"
+
+          # Push to merge branch
+          echo "📤 Pushing to merge branch in public repo..."
+          git push public release-branch:merge --force
+
+          echo "✅ Release $VERSION pushed to merge branch!"
+          echo "🔗 Create PR at: https://github.com/tdsoft-technology/aikit/compare/main...merge"
+          echo "   Or use: gh pr create --repo tdsoft-technology/aikit --base main --head merge"
