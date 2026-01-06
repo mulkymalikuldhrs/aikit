@@ -1,10 +1,12 @@
 # Private files
-.beads
-.aikit
-.claude
-.opencode
+.beads/
+.aikit/
+.claude/
+.opencode/
 docs/
 document/
+test_dir/
+aikit-test-prj/
 AGENTS.md
 .github/workflows/
 
