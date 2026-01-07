@@ -35,19 +35,17 @@ export class OpenCodeAdapter implements PlatformAdapter {
 
   async transformCommand(command: Command): Promise<{ name: string; content: string }> {
     // Sanitize filename for Windows (replace colons with dashes)
-    const sanitizedName = command.name.replace(/:/g, '-');
-    const name = `ak_cm_${sanitizedName}`;
+    const name = command.name.replace(/:/g, '-');
     const content = this.generateCommandContent(command);
     return { name, content };
   }
 
   async transformSkill(skill: Skill): Promise<TransformedSkill> {
-    const skillName = `ak_sk_${skill.name}`;
     const skillContent = this.generateSkillContent(skill);
     const result: TransformedSkill = {
-      name: skillName,
+      name: skill.name,
       directory: '',
-      files: { [`${skillName}.md`]: skillContent },
+      files: { [`${skill.name}.md`]: skillContent },
     };
     return result;
   }
@@ -102,17 +100,16 @@ export class OpenCodeAdapter implements PlatformAdapter {
 
   private generateCommandContent(command: Command): string {
     const examples = command.examples.map(e => {
-      const prefixed = e.replace(/\//g, '/ak_cm_');
-      return `- \`${prefixed}\``;
+      return `- \`${e}\``;
     }).join('\n');
 
-    return `# Command: /ak_cm_${command.name}
+    return `# Command: /${command.name}
 
 ## Description
 ${command.description}
 
 ## Usage
-\`${command.usage.replace(/\//g, '/ak_cm_')}\`
+\`${command.usage}\`
 
 ## Examples
 ${examples}
@@ -130,8 +127,8 @@ The arguments are available in this command response - look at the command workf
 4. They have already provided it - extract and use it!
 
 **Example Scenario**:
-- User runs: \`/ak_cm_${command.name} snake game with html & css\`
-- Command: \`/ak_cm_${command.name}\`
+- User runs: \`/${command.name} snake game with html & css\`
+- Command: \`/${command.name}\`
 - Arguments to use: \`snake game with html & css\`
 - You must use "snake game with html & css" as provided in the workflow!
 

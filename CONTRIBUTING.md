@@ -198,7 +198,7 @@ src/
 Helps design RESTful APIs with best practices.
 
 ## Usage
-/ak_sk_api-design
+/api-design
 
 ## What It Does
 - Analyzes requirements

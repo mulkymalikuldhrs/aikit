@@ -1,6 +1,6 @@
 /**
  * AIKit - Open-source AI coding agent toolkit for OpenCode
- * 
+ *
  * Provides skills, agents, commands, tools, and plugins for enhanced AI-assisted development.
  */
 
@@ -14,6 +14,7 @@ export { PluginSystem, type Plugin, type PluginEvent } from './core/plugins.js';
 export { MemoryManager, type Memory } from './core/memory.js';
 export { BeadsIntegration } from './core/beads.js';
 export { AntiHallucination } from './core/anti-hallucination.js';
+export { checkForUpdatesAsync } from './core/update-manager.js';
 
 // Utilities
 export { logger } from './utils/logger.js';

@@ -20,7 +20,9 @@ config/secrets.json
 # AI Working Directories
 .aikit/memory/
 .aikit/checkpoints/
-.aikit/sessions/
+.aikit/sessions/.current-*-session
+.aikit/sessions/.terminal-sessions.json
+.aikit/sessions/.current-session
 
 # Claude Code
 .claude/settings.json

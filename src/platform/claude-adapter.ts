@@ -4,7 +4,7 @@ import { Skill } from '../core/skills.js';
 import { Agent } from '../core/agents.js';
 import { CliPlatform } from '../utils/cli-detector.js';
 import { paths } from '../utils/paths.js';
-import { writeFile, mkdir } from 'fs/promises';
+import { writeFile, mkdir, readdir } from 'fs/promises';
 import { join } from 'path';
 import matter from 'gray-matter';
 
@@ -15,6 +15,9 @@ import matter from 'gray-matter';
 export class ClaudeAdapter implements PlatformAdapter {
   readonly platform = CliPlatform.CLAUDE;
   readonly displayName = 'Claude Code CLI';
+
+  // Track installed commands for manifest generation
+  private installedCommands: string[] = [];
 
   getCommandsDir(): string {
     return paths.claudeCommands(true); // project scope
@@ -55,6 +58,8 @@ export class ClaudeAdapter implements PlatformAdapter {
     const dir = this.getCommandsDir();
     await mkdir(dir, { recursive: true });
     await writeFile(join(dir, `${name}.md`), content);
+    // Track command for manifest generation
+    this.installedCommands.push(name);
   }
 
   async installSkill(_name: string, directory: string, files: Record<string, string>): Promise<void> {
@@ -86,8 +91,8 @@ export class ClaudeAdapter implements PlatformAdapter {
       .replace(/\*\*User runs:.*?\*\*:\n.*?\n+- Command:.*?\n+- Arguments to use:.*?\n+- You must use.*?\n+- DO NOT:.*?\n+- DO:.*?\n+\*\*\*/g, '')
       .replace(/\*\*\*/g, '');
 
-    // Remove OpenCode command header
-    workflow = workflow.replace(/^# Command: \/ak_cm_[\s-]+\n+/g, '');
+    // Remove command header
+    workflow = workflow.replace(/^# Command: \/[a-z_]*[\s-]+\n+/g, '');
 
     // Transform $ARGUMENTS to Claude format
     workflow = workflow
@@ -139,5 +144,30 @@ ${skill.content}
     };
 
     return matter.stringify(agent.systemPrompt, frontmatter);
+  }
+
+  /**
+   * Generate commands.json manifest file
+   * This ensures local commands are discovered by Claude Code
+   * and take precedence over parent directory commands
+   *
+   * Reference: https://github.com/anthropics/claude-code/issues/14243
+   */
+  async generateCommandsManifest(): Promise<void> {
+    const commandsDir = this.getCommandsDir();
+    const manifestPath = join(commandsDir, 'commands.json');
+
+    // Sort commands alphabetically for consistent ordering
+    const sortedCommands = [...this.installedCommands].sort();
+
+    const manifest = {
+      commands: sortedCommands,
+      // Add version for future compatibility
+      version: '1.0',
+      generatedBy: 'aikit',
+      generatedAt: new Date().toISOString(),
+    };
+
+    await writeFile(manifestPath, JSON.stringify(manifest, null, 2));
   }
 }

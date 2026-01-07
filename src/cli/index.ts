@@ -1,11 +1,12 @@
 /**
  * AIKit CLI - Main Entry Point
- * 
+ *
  * Open-source AI coding agent toolkit for OpenCode
  */
 
 import { Command } from 'commander';
 import { VERSION } from '../index.js';
+import { checkForUpdatesAsync } from '../core/update-manager.js';
 
 import {
   registerInitCommand,
@@ -47,6 +48,13 @@ registerStatusCommand(program);
 
 // Run CLI
 program.parse();
+
+// Non-blocking update check
+checkForUpdatesAsync().catch(err => {
+  if (process.env.AIKIT_DEBUG) {
+    console.error('Update check failed:', err);
+  }
+});
 
 
 

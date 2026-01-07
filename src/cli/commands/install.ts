@@ -13,6 +13,7 @@ import { createAdapter } from '../../platform/adapters.js';
 import { loadConfig } from '../../core/config.js';
 import { AgentManager } from '../../core/agents.js';
 import { CommandRunner } from '../../core/commands.js';
+import { SessionManager } from '../../core/sessions.js';
 import { SkillEngine } from '../../core/skills.js';
 
 export function registerInstallCommand(program: Command): void {
@@ -57,6 +58,15 @@ export function registerInstallCommand(program: Command): void {
 
         logger.info(`Installing AIKit for ${selectedPlatform}...`);
 
+        // Initialize sessions folder
+        const sessionManager = new SessionManager();
+        await sessionManager.init();
+        logger.success('✓ Sessions folder initialized');
+
+        // Initialize terminal session file
+        const { tracker } = await sessionManager.initTerminalSession();
+        logger.success(`✓ Session tracker initialized (${tracker.split('/').pop()})`);
+
         const config = await loadConfig();
         const adapter = createAdapter(selectedPlatform);
 
@@ -95,6 +105,13 @@ export function registerInstallCommand(program: Command): void {
             await adapter.installAgent(name, content);
             logger.info(`  ✓ Created ${name} agent`);
           }
+        }
+
+        // Generate commands.json manifest for Claude Code
+        // This ensures local commands are discovered and take precedence over parent directories
+        if (selectedPlatform === 'claude' && adapter.generateCommandsManifest) {
+          await adapter.generateCommandsManifest();
+          logger.success('✓ Generated commands manifest');
         }
 
         logger.success(`\n✓ AIKit installed to ${adapter.displayName}!`);

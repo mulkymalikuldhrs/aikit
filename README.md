@@ -1,6 +1,7 @@
 <div align="center">
 
 <img src="assets/logo.png" alt="AIKit Logo" width="200"/>
+<a href="https://www.producthunt.com/products/aikit?embed=true&amp;utm_source=badge-featured&amp;utm_medium=badge&amp;utm_campaign=badge-aikit" target="_blank" rel="noopener noreferrer"><img alt="AIKit - Transform Claude Code into a production dev environment. | Product Hunt" width="250" height="54" src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1058608&amp;theme=light&amp;t=1767742744161"></a>
 
 # **AIKit**
 
@@ -109,10 +110,10 @@ Perfect for developers who want to:
 /session:start
 ```
 
-**OpenCode (prefixed):**
+**OpenCode:**
 ```bash
-/ak_cm_plan    /ak_cm_implement  /ak_cm_fix
-/ak_cm_test    /ak_sk_review     /ak_cm_branch
+/plan    /implement  /fix
+/test    /review     /branch
 /session:start
 ```
 
@@ -152,7 +153,7 @@ That's it! 🎉 AIKit is now ready to use.
 
 **For OpenCode:**
 1. **Open OpenCode** and press `/` to see available commands
-2. Try a skill: `/ak_sk_test-driven-development`
+2. Try a skill: `/test-driven-development`
 3. Switch agents: Press `<tab>` to cycle through agents
 4. Read the [documentation](https://aikit.tdsoft.tech/docs/intro)
 
@@ -202,7 +203,7 @@ That's it! 🎉 AIKit is now ready to use.
 
 **OpenCode:**
 ```bash
-/ak_cm_plan "Add user authentication with OAuth"
+/plan "Add user authentication with OAuth"
 ```
 
 ### Implementing Features
@@ -216,8 +217,8 @@ That's it! 🎉 AIKit is now ready to use.
 
 **OpenCode:**
 ```bash
-/ak_cm_implement
-/ak_sk_test-driven-development
+/implement
+/test-driven-development
 ```
 
 ### Fixing Bugs
@@ -229,7 +230,7 @@ That's it! 🎉 AIKit is now ready to use.
 
 **OpenCode:**
 ```bash
-/ak_cm_fix "Login fails on Safari"
+/fix "Login fails on Safari"
 ```
 
 ### Code Review
@@ -241,7 +242,7 @@ That's it! 🎉 AIKit is now ready to use.
 
 **OpenCode:**
 ```bash
-/ak_sk_code-review
+/code-review
 ```
 
 ### One-Shot Automation
@@ -253,7 +254,7 @@ That's it! 🎉 AIKit is now ready to use.
 
 **OpenCode:**
 ```bash
-/ak_cm_one-shot "Add dark mode toggle to settings"
+/one-shot "Add dark mode toggle to settings"
 ```
 
 ### Creating Branches
@@ -265,7 +266,7 @@ That's it! 🎉 AIKit is now ready to use.
 
 **OpenCode:**
 ```bash
-/ak_cm_branch "user-oauth"
+/branch "user-oauth"
 ```
 
 ---
@@ -300,12 +301,13 @@ If you find AIKit useful, please consider supporting us! Your support helps us:
 | Support Type | Link | Description |
 |--------------|------|-------------|
 | ⭐ **Star on GitHub** | [Star this repo](https://github.com/tdsoft-technology/aikit) | It's free and helps others discover AIKit! |
-| ☕ **Buy Me a Coffee** | [Support development](https://ko-fi.com) | One-time donation (link coming soon) |
 | 💬 **Join Discussions** | [GitHub Discussions](https://github.com/tdsoft-technology/aikit/discussions) | Ask questions, share ideas |
+| 💰 **Sponsor me at GitHub** | [Sponsor me at GitHub](https://github.com/sponsors/dpnt23) | Support development |
+<div style="font-family: -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, Roboto, &quot;Helvetica Neue&quot;, Arial, sans-serif; border: 1px solid rgb(224, 224, 224); border-radius: 12px; padding: 20px; max-width: 500px; background: rgb(255, 255, 255); box-shadow: rgba(0, 0, 0, 0.05) 0px 2px 8px;"><div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;"><img alt="AIKit" src="https://ph-files.imgix.net/e2eef671-13f0-4f5c-9dca-7450a9fb29ec.png?auto=format&amp;fit=crop&amp;w=80&amp;h=80" style="width: 64px; height: 64px; border-radius: 8px; object-fit: cover; flex-shrink: 0;"><div style="flex: 1 1 0%; min-width: 0px;"><h3 style="margin: 0px; font-size: 18px; font-weight: 600; color: rgb(26, 26, 26); line-height: 1.3; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">AIKit</h3><p style="margin: 4px 0px 0px; font-size: 14px; color: rgb(102, 102, 102); line-height: 1.4; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">Transform Claude Code into a production dev environment.</p></div></div><a href="https://www.producthunt.com/products/aikit?embed=true&amp;utm_source=embed&amp;utm_medium=post_embed" target="_blank" rel="noopener" style="display: inline-flex; align-items: center; gap: 4px; margin-top: 12px; padding: 8px 16px; background: rgb(255, 97, 84); color: rgb(255, 255, 255); text-decoration: none; border-radius: 8px; font-size: 14px; font-weight: 600;">Check it out on Product Hunt →</a></div>
 
 ---
 
-## 📊 Changelog
+## Changelog
 
 See [CHANGELOG.md](CHANGELOG.md) for version history and updates.
 
@@ -317,7 +319,7 @@ See [CHANGELOG.md](CHANGELOG.md) for version history and updates.
 
 ---
 
-## 📜 Licensing
+## Licensing
 
 AIKit is available under a dual-license model:
 
@@ -337,16 +339,15 @@ AIKit is available under a dual-license model:
 
 ---
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 Built with ❤️ by the open-source community.
 ---
 
 <div align="center">
 
-###Built for Developers • Open Source Forever
+Built for Developers • Open Source Forever
 
-[🔝 Back to Top](#-aikit)
 
 [Documentation](https://aikit.tdsoft.tech/docs/intro) •
 [Issues](https://github.com/tdsoft-technology/aikit/issues) •

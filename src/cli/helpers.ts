@@ -22,6 +22,7 @@ import { CommandRunner } from '../core/commands.js';
 import { CliTool, CliToolInfo } from '../utils/cli-detector.js';
 import { logger } from '../utils/logger.js';
 import { paths } from '../utils/paths.js';
+import chalk from 'chalk';
 
 /**
  * Initialize AIKit configuration in a directory
@@ -481,8 +482,8 @@ export async function installToOpenCode(_opencodePath: string): Promise<void> {
   const opencodeCommands: Record<string, string> = {};
   
   // Create /skills command that lists all available skills
-  const skillsList = skills.map(s => `| \`/ak_sk_${s.name.replace(/\s+/g, '-')}\` | ${s.description} |`).join('\n');
-  opencodeCommands['ak_cm_skills'] = `List all available AIKit skills and how to use them.
+  const skillsList = skills.map(s => `| \`/${s.name.replace(/\s+/g, '-')}\` | ${s.description} |`).join('\n');
+  opencodeCommands['skills'] = `List all available AIKit skills and how to use them.
 
 READ .aikit/AGENTS.md
 
@@ -492,18 +493,18 @@ READ .aikit/AGENTS.md
 |---------|-------------|
 ${skillsList}
 
-Type any command to use that skill. For example: \`/ak_sk_test-driven-development\``;
-  
+Type any command to use that skill. For example: \`/test-driven-development\``;
+
   // Generate commands from skills
   for (const skill of skills) {
-    const commandName = `ak_sk_${skill.name.replace(/\s+/g, '-').toLowerCase()}`;
+    const commandName = skill.name.replace(/\s+/g, '-').toLowerCase();
     const skillPath = skill.filePath;
-    const relativePath = skillPath.startsWith(projectPath) 
+    const relativePath = skillPath.startsWith(projectPath)
       ? skillPath.replace(projectPath, '').replace(/\\/g, '/').replace(/^\//, '')
       : `.aikit/skills/${skill.name.replace(/\s+/g, '-').toLowerCase()}.md`;
-    
+
     const useWhen = skill.useWhen || `The user asks you to ${skill.name}`;
-    
+
     opencodeCommands[commandName] = `Use the **${skill.name} skill** ${useWhen.toLowerCase()}.
 
 READ ${relativePath}
@@ -520,29 +521,28 @@ ${skill.content.split('\n').slice(0, 20).join('\n')}${skill.content.split('\n').
 **IMPORTANT**: Follow this skill's workflow step by step. Do not skip steps.
 Complete the checklist at the end of the skill.`;
   }
-  
+
   // Generate commands from slash commands
   for (const cmd of commands) {
     // Skip if already exists as a skill command
     if (opencodeCommands[cmd.name]) continue;
 
-    const commandName = `ak_cm_${cmd.name.replace(/\//g, '').replace(/\s+/g, '-')}`;
+    const commandName = cmd.name.replace(/\//g, '').replace(/\s+/g, '-');
     const examples = cmd.examples.map(e => {
-      const prefixed = e.replace(/\//g, '/ak_cm_');
-      return `- \`${prefixed}\``;
+      return `- \`${e}\``;
     }).join('\n');
 
     // Special handling for analyze-figma command
     if (cmd.name === 'analyze-figma') {
       opencodeCommands[commandName] = generateAnalyzeFigmaCommand();
     } else {
-      opencodeCommands[commandName] = `# Command: /ak_cm_${cmd.name}
+      opencodeCommands[commandName] = `# Command: /${cmd.name}
 
 ## Description
 ${cmd.description}
 
 ## Usage
-\`${cmd.usage.replace(/\//g, '/ak_cm_')}\`
+\`${cmd.usage}\`
 
 ## Examples
 ${examples}
@@ -560,8 +560,8 @@ The arguments are available in this command response - look at the command workf
 4. They have already provided it - extract and use it!
 
 **Example Scenario**:
-- User runs: \`/ak_cm_${cmd.name} snake game with html & css\`
-- Command: \`/ak_cm_${cmd.name}\`
+- User runs: \`/${cmd.name} snake game with html & css\`
+- Command: \`/${cmd.name}\`
 - Arguments to use: \`snake game with html & css\`
 - You must use "snake game with html & css" as provided in the workflow!
 
@@ -574,7 +574,7 @@ ${cmd.content}
 **Category**: ${cmd.category}`;
     }
   }
-  
+
   // Write all command files
   let count = 0;
   for (const [name, content] of Object.entries(opencodeCommands)) {
@@ -591,8 +591,8 @@ ${cmd.content}
 
    logger.info('\nUsage in OpenCode:');
    logger.info('  Press Ctrl+K to open command picker');
-   logger.info('  Or type /ak_cm_skills to see all available skills');
-   logger.info(`  Available: ${skills.length} skills (ak_sk_*), ${commands.length} commands (ak_cm_*)`);
+   logger.info('  Or type /skills to see all available skills');
+   logger.info(`  Available: ${skills.length} skills, ${commands.length} commands`);
    logger.info('  MCP server configured - tools available via MCP protocol');
 }
 
@@ -798,12 +798,19 @@ export async function startSession(name?: string, goals?: string[]): Promise<voi
       console.log(`  Goals:`);
       session.goals.forEach(goal => console.log(`    - ${goal}`));
     }
+
     console.log('\nCommands:');
     console.log('  /session:update [notes] - Add progress notes');
     console.log('  /session:end - End session with summary');
-    console.log('  /session:current - Show session status\n');
+    console.log('  /session:current - Show session status');
+    console.log('  /session:use <id> - Switch to a different session\n');
   } catch (error) {
-    logger.error('Failed to start session:', error);
+    if (error instanceof Error && error.message.includes('not initialized')) {
+      logger.error(error.message);
+      console.log('Run "aikit init" first to initialize AIKit in this directory.\n');
+    } else {
+      logger.error('Failed to start session:', error);
+    }
   }
 }
 
@@ -828,7 +835,10 @@ export async function updateSession(notes?: string): Promise<void> {
       console.log();
     }
   } catch (error) {
-    if (error instanceof Error && error.message.includes('No active session')) {
+    if (error instanceof Error && error.message.includes('not initialized')) {
+      logger.error(error.message);
+      console.log('Run "aikit init" first to initialize AIKit in this directory.\n');
+    } else if (error instanceof Error && error.message.includes('No active session')) {
       logger.error('No active session. Use /session:start first');
     } else {
       logger.error('Failed to update session:', error);
@@ -873,7 +883,10 @@ export async function endSession(): Promise<void> {
       console.log(`\nUse /session:show ${session.id} for details\n`);
     }
   } catch (error) {
-    if (error instanceof Error && error.message.includes('No active session')) {
+    if (error instanceof Error && error.message.includes('not initialized')) {
+      logger.error(error.message);
+      console.log('Run "aikit init" first to initialize AIKit in this directory.\n');
+    } else if (error instanceof Error && error.message.includes('No active session')) {
       logger.error('No active session. Use /session:start first');
     } else {
       logger.error('Failed to end session:', error);
@@ -897,12 +910,16 @@ export async function showCurrentSession(): Promise<void> {
     }
 
     const duration = Math.floor((Date.now() - new Date(session.startTime).getTime()) / 60000);
+    const terminalInfo = await manager.getTerminalInfo();
 
     console.log('\n📍 Current Session');
     console.log('━'.repeat(60));
     console.log(`\nSession: ${session.name}`);
     console.log(`ID: ${session.id}`);
     console.log(`Started: ${Math.floor(duration / 60)}h ${duration % 60}m ago`);
+    if (terminalInfo.tty) {
+      console.log(`Terminal: ${terminalInfo.tty}`);
+    }
 
     if (session.goals.length > 0) {
       console.log(`\nGoals:`);
@@ -935,10 +952,16 @@ export async function showCurrentSession(): Promise<void> {
 
     console.log('\nCommands:');
     console.log('  /session:update [notes] - Add progress');
+    console.log('  /session:use <id> - Switch to another session');
     console.log('  /session:end - Close session');
     console.log('━'.repeat(60) + '\n');
   } catch (error) {
-    logger.error('Failed to show current session:', error);
+    if (error instanceof Error && error.message.includes('not initialized')) {
+      logger.error(error.message);
+      console.log('Run "aikit init" first to initialize AIKit in this directory.\n');
+    } else {
+      logger.error('Failed to show current session:', error);
+    }
   }
 }
 
@@ -990,7 +1013,12 @@ export async function listSessions(): Promise<void> {
     console.log('  /session:resume <id> - Resume session');
     console.log('  /session:search <query> - Search sessions\n');
   } catch (error) {
-    logger.error('Failed to list sessions:', error);
+    if (error instanceof Error && error.message.includes('not initialized')) {
+      logger.error(error.message);
+      console.log('Run "aikit init" first to initialize AIKit in this directory.\n');
+    } else {
+      logger.error('Failed to list sessions:', error);
+    }
   }
 }
 
@@ -1058,7 +1086,12 @@ export async function showSession(sessionId: string): Promise<void> {
 
     console.log('\n' + '━'.repeat(60) + '\n');
   } catch (error) {
-    logger.error('Failed to show session:', error);
+    if (error instanceof Error && error.message.includes('not initialized')) {
+      logger.error(error.message);
+      console.log('Run "aikit init" first to initialize AIKit in this directory.\n');
+    } else {
+      logger.error('Failed to show session:', error);
+    }
   }
 }
 
@@ -1100,7 +1133,96 @@ export async function searchSessions(query: string): Promise<void> {
     console.log('  /session:show <id> - View session details');
     console.log('  /session:resume <id> - Resume session\n');
   } catch (error) {
-    logger.error('Failed to search sessions:', error);
+    if (error instanceof Error && error.message.includes('not initialized')) {
+      logger.error(error.message);
+      console.log('Run "aikit init" first to initialize AIKit in this directory.\n');
+    } else {
+      logger.error('Failed to search sessions:', error);
+    }
   }
 }
 
+/**
+ * Resume a past session
+ */
+export async function resumeSession(sessionId: string): Promise<void> {
+  try {
+    const { SessionManager } = await import('../core/sessions.js');
+    const manager = new SessionManager();
+    const session = await manager.resumeSession(sessionId);
+
+    logger.success('✓ Session resumed');
+    console.log(`  ID: ${session.id}`);
+    console.log(`  Name: ${session.name}`);
+    console.log(`  Status: ${session.status}`);
+    console.log(`  Started: ${new Date(session.startTime).toLocaleString()}`);
+
+    if (session.goals.length > 0) {
+      console.log(`  Goals:`);
+      session.goals.forEach(goal => console.log(`    - ${goal}`));
+    }
+
+    console.log('\nCommands:');
+    console.log('  /session:update [notes] - Add progress notes');
+    console.log('  /session:end - End session with summary');
+    console.log('  /session:current - Show session status');
+    console.log('  /session:use <id> - Switch to a different session\n');
+  } catch (error) {
+    if (error instanceof Error && error.message.includes('not initialized')) {
+      logger.error(error.message);
+      console.log('Run "aikit init" first to initialize AIKit in this directory.\n');
+    } else if (error instanceof Error && error.message.includes('not found')) {
+      logger.error(error.message);
+      console.log('Use /session:list to see all sessions\n');
+    } else {
+      logger.error('Failed to resume session:', error);
+    }
+  }
+}
+
+/**
+ * Switch to a different session in the current terminal
+ */
+export async function switchSession(sessionId: string): Promise<void> {
+  try {
+    const { SessionManager } = await import('../core/sessions.js');
+    const manager = new SessionManager();
+
+    // First verify session exists
+    const session = await manager.getSession(sessionId);
+    if (!session) {
+      logger.error(`Session not found: ${sessionId}`);
+      console.log('Use /session:list to see all sessions\n');
+      return;
+    }
+
+    // Switch to this session for current terminal
+    await manager.switchSession(sessionId);
+
+    logger.success('✓ Switched to session');
+    console.log(`  ID: ${session.id}`);
+    console.log(`  Name: ${session.name}`);
+    console.log(`  Status: ${session.status}`);
+    console.log(`  Started: ${new Date(session.startTime).toLocaleString()}`);
+
+    if (session.goals.length > 0) {
+      console.log(`  Goals:`);
+      session.goals.forEach(goal => console.log(`    - ${goal}`));
+    }
+
+    console.log('\nCommands:');
+    console.log('  /session:update [notes] - Add progress notes');
+    console.log('  /session:end - End session with summary');
+    console.log('  /session:current - Show session status\n');
+  } catch (error) {
+    if (error instanceof Error && error.message.includes('not initialized')) {
+      logger.error(error.message);
+      console.log('Run "aikit init" first to initialize AIKit in this directory.\n');
+    } else if (error instanceof Error && error.message.includes('not found')) {
+      logger.error(error.message);
+      console.log('Use /session:list to see all sessions\n');
+    } else {
+      logger.error('Failed to switch session:', error);
+    }
+  }
+}

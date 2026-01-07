@@ -55,4 +55,9 @@ export interface PlatformAdapter {
    * Install agent to filesystem
    */
   installAgent(name: string, content: string): Promise<void>;
+
+  /**
+   * Generate commands manifest (Claude-specific)
+   */
+  generateCommandsManifest?(): Promise<void>;
 }

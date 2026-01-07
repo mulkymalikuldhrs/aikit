@@ -1,5 +1,19 @@
 # Changelog
 
+## [Unreleased]
+
+### Breaking Changes ⚠️
+- 🏷️ **Removed Command & Skill Prefixes** - Reverted to simpler command names for better usability:
+  - All commands now use simple names without prefixes (e.g., `/plan`, `/implement`, `/fix`)
+  - All skills use simple names (e.g., `/test-driven-development`, `/code-review`)
+  - Old prefixed names (`/ak_cm_*` and `/ak_sk_*`) are deprecated
+  - Documentation updated to use new simpler naming
+
+### Migration Guide
+1. Run `aikit install` to generate new unprefixed commands
+2. Use simple command names: `/plan` instead of `/ak_cm_plan`
+3. Use simple skill names: `/test-driven-development` instead of `/ak_sk_test-driven-development`
+
 ## [0.1.18] - 2026-01-02
 
 ### Fixed

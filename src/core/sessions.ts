@@ -1,11 +1,18 @@
-import { readFile, writeFile, readdir, mkdir, access } from 'fs/promises';
-import { existsSync } from 'fs';
+import { readFile, writeFile, readdir, mkdir, access, constants, unlink } from 'fs/promises';
 import { join } from 'path';
 import matter from 'gray-matter';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 
 const execAsync = promisify(exec);
+
+/**
+ * Sanitize TTY path for use in filename
+ * Replaces '/' and other special characters with '-'
+ */
+function sanitizeTTY(tty: string): string {
+  return tty.replace(/[^a-zA-Z0-9._-]/g, '-');
+}
 
 /**
  * Session update structure
@@ -42,16 +49,117 @@ export interface Session {
 export class SessionManager {
   private sessionsDir: string;
   private projectPath: string;
+  private aikitDir: string;
 
   constructor(projectPath?: string) {
+    // STRICT SCOPE: Only use current working directory, never search parent
     this.projectPath = projectPath || process.cwd();
-    this.sessionsDir = join(this.projectPath, '.aikit', 'sessions');
+    this.aikitDir = join(this.projectPath, '.aikit');
+    this.sessionsDir = join(this.aikitDir, 'sessions');
+  }
+
+  /**
+   * Get current terminal's TTY path
+   * Uses the `tty` command to get the terminal device path
+   * Returns null if not a TTY (editor environment)
+   */
+  private async getCurrentTTY(): Promise<string | null> {
+    try {
+      const { stdout } = await execAsync('tty');
+      const tty = stdout.trim();
+      // Check if it's a valid TTY (not "not a tty")
+      if (tty === 'not a tty' || !tty.startsWith('/')) {
+        return null;
+      }
+      return tty;
+    } catch {
+      // Not a TTY or tty command not available
+      return null;
+    }
+  }
+
+  /**
+   * Get a unique identifier for the current terminal/editor session
+   * Uses TTY if available, otherwise uses PPID (parent process ID)
+   */
+  private async getTerminalIdentifier(): Promise<string> {
+    const tty = await this.getCurrentTTY();
+    if (tty) {
+      return sanitizeTTY(tty);
+    }
+    // No TTY - use parent PID for unique per-terminal identification
+    // Each Claude Code window has a different parent process
+    return `ppid-${process.ppid}`;
+  }
+
+  /**
+   * Get the current session tracker file path
+   * Always uses per-terminal file (TTY or PPID-based)
+   */
+  private async getSessionTrackerPath(): Promise<string> {
+    const identifier = await this.getTerminalIdentifier();
+    return join(this.sessionsDir, `.current-${identifier}-session`);
+  }
+
+  /**
+   * Switch to a different session in the current terminal
+   */
+  async switchSession(sessionId: string): Promise<void> {
+    const session = await this.getSession(sessionId);
+    if (!session) {
+      throw new Error(`Session not found: ${sessionId}`);
+    }
+
+    const sessionFile = await this.getSessionTrackerPath();
+    await writeFile(sessionFile, sessionId);
+  }
+
+  /**
+   * Initialize the current terminal's session file
+   * Creates an empty tracker file if it doesn't exist
+   */
+  async initTerminalSession(): Promise<{ tracker: string }> {
+    const sessionFile = await this.getSessionTrackerPath();
+
+    // Create empty file if it doesn't exist
+    try {
+      await access(sessionFile);
+    } catch {
+      await writeFile(sessionFile, '');
+    }
+
+    return { tracker: sessionFile };
+  }
+
+  /**
+   * Get current terminal info (for display purposes)
+   */
+  async getTerminalInfo(): Promise<{ tty: string | null; sessionId: string | null }> {
+    const tty = await this.getCurrentTTY();
+    const sessionId = await this.getActiveSessionId();
+    return { tty, sessionId };
+  }
+
+  /**
+   * Check if .aikit directory exists in current project path
+   */
+  private async ensureAikitExists(): Promise<void> {
+    try {
+      await access(this.aikitDir, constants.R_OK);
+    } catch {
+      throw new Error(
+        `AIKit not initialized in current directory (${this.projectPath}). ` +
+        `Run 'aikit init' first to initialize AIKit in this directory.`
+      );
+    }
   }
 
   /**
    * Initialize sessions directory
    */
   async init(): Promise<void> {
+    // Ensure .aikit exists before creating sessions subdirectory
+    await this.ensureAikitExists();
     await mkdir(this.sessionsDir, { recursive: true });
   }
 
@@ -59,6 +167,8 @@ export class SessionManager {
    * Start a new session
    */
   async startSession(name?: string, goals?: string[]): Promise<Session> {
+    // Ensure .aikit exists (will throw if not)
+    await this.ensureAikitExists();
     await this.init();
 
     // Generate session ID
@@ -102,6 +212,9 @@ export class SessionManager {
    * Update current session with notes
    */
   async updateSession(notes?: string): Promise<Session | null> {
+    // Ensure .aikit exists (will throw if not)
+    await this.ensureAikitExists();
+    
     const sessionId = await this.getActiveSessionId();
     if (!sessionId) {
       throw new Error('No active session. Use startSession() first.');
@@ -143,6 +256,9 @@ export class SessionManager {
    * End current session and generate summary
    */
   async endSession(): Promise<Session | null> {
+    // Ensure .aikit exists (will throw if not)
+    await this.ensureAikitExists();
+    
     const sessionId = await this.getActiveSessionId();
     if (!sessionId) {
       throw new Error('No active session. Use startSession() first.');
@@ -182,6 +298,9 @@ export class SessionManager {
    * Get current active session
    */
   async getCurrentSession(): Promise<Session | null> {
+    // Ensure .aikit exists (will throw if not)
+    await this.ensureAikitExists();
+    
     const sessionId = await this.getActiveSessionId();
     if (!sessionId) return null;
     return this.getSession(sessionId);
@@ -191,6 +310,9 @@ export class SessionManager {
    * Get all sessions
    */
   async listSessions(): Promise<Session[]> {
+    // Ensure .aikit exists (will throw if not)
+    await this.ensureAikitExists();
+    
     try {
       const files = await readdir(this.sessionsDir);
       const sessions: Session[] = [];
@@ -209,8 +331,13 @@ export class SessionManager {
       return sessions.sort((a, b) =>
         new Date(b.startTime).getTime() - new Date(a.startTime).getTime()
       );
-    } catch {
-      return [];
+    } catch (error) {
+      // If sessions directory doesn't exist, return empty array
+      // (but .aikit should exist due to ensureAikitExists check above)
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+        return [];
+      }
+      throw error;
     }
   }
 
@@ -218,6 +345,9 @@ export class SessionManager {
    * Get specific session
    */
   async getSession(id: string): Promise<Session | null> {
+    // Ensure .aikit exists (will throw if not)
+    await this.ensureAikitExists();
+    
     const filePath = join(this.sessionsDir, `${id}.md`);
 
     try {
@@ -245,47 +375,120 @@ export class SessionManager {
    * Search sessions by keyword
    */
   async searchSessions(query: string): Promise<Session[]> {
+    // listSessions() already ensures .aikit exists
     const sessions = await this.listSessions();
     const lowerQuery = query.toLowerCase();
 
     return sessions.filter((session) =>
       session.name.toLowerCase().includes(lowerQuery) ||
       session.id.toLowerCase().includes(lowerQuery) ||
-      session.goals.some((g) => g.toLowerCase().includes(lowerQuery)) ||
+      (Array.isArray(session.goals) && session.goals.some((g) => 
+        typeof g === 'string' && g.toLowerCase().includes(lowerQuery)
+      )) ||
       session.updates.some((u) => u.notes?.toLowerCase().includes(lowerQuery))
     );
   }
 
   /**
+   * Resume a past session (set as active)
+   * Supports partial ID matching and "latest" keyword
+   */
+  async resumeSession(idOrLatest: string): Promise<Session> {
+    // Ensure .aikit exists (will throw if not)
+    await this.ensureAikitExists();
+
+    let session: Session | null = null;
+
+    if (idOrLatest === 'latest') {
+      const sessions = await this.listSessions();
+      if (sessions.length === 0) {
+        throw new Error('No sessions found to resume');
+      }
+      session = sessions[0]; // Already sorted newest first
+    } else {
+      // Try exact match first
+      session = await this.getSession(idOrLatest);
+      
+      // If not found, try partial match
+      if (!session) {
+        const sessions = await this.listSessions();
+        const matches = sessions.filter(s => s.id.startsWith(idOrLatest));
+        
+        if (matches.length === 0) {
+          throw new Error(`Session not found: ${idOrLatest}`);
+        }
+        if (matches.length > 1) {
+          throw new Error(
+            `Multiple sessions match "${idOrLatest}": ${matches.map(s => s.id).join(', ')}. ` +
+            `Please use a more specific ID.`
+          );
+        }
+        session = matches[0];
+      }
+    }
+
+    if (!session) {
+      throw new Error(`Session not found: ${idOrLatest}`);
+    }
+
+    // If session is already active, just return it
+    const currentSessionId = await this.getActiveSessionId();
+    if (currentSessionId === session.id) {
+      return session;
+    }
+
+    // Set as active session
+    await this.setActiveSession(session.id);
+
+    // Add resume update if session was ended
+    if (session.status === 'ended') {
+      session.status = 'active';
+      session.endTime = undefined; // Clear end time when resuming
+      
+      session.updates.push({
+        timestamp: new Date().toISOString(),
+        notes: 'Session resumed',
+        gitBranch: (await this.getGitState()).branch,
+      });
+
+      await this.saveSession(session);
+    }
+
+    return session;
+  }
+
+  /**
    * Get active session ID
+   * Reads from the current session tracker file
    */
   private async getActiveSessionId(): Promise<string | null> {
-    const trackerPath = join(this.sessionsDir, '.current-session');
+    const sessionFile = await this.getSessionTrackerPath();
 
     try {
-      const content = await readFile(trackerPath, 'utf-8');
-      return content.trim();
+      const content = await readFile(sessionFile, 'utf-8');
+      return content.trim() || null;
     } catch {
       return null;
     }
   }
 
   /**
-   * Set active session
+   * Set active session for current terminal
+   * Writes to the current session tracker file
    */
   private async setActiveSession(id: string): Promise<void> {
-    const trackerPath = join(this.sessionsDir, '.current-session');
-    await writeFile(trackerPath, id);
+    const sessionFile = await this.getSessionTrackerPath();
+    await writeFile(sessionFile, id);
   }
 
   /**
-   * Clear active session
+   * Clear active session for current terminal
    */
   private async clearActiveSession(): Promise<void> {
-    const trackerPath = join(this.sessionsDir, '.current-session');
+    const sessionFile = await this.getSessionTrackerPath();
 
     try {
-      await writeFile(trackerPath, '');
+      await writeFile(sessionFile, '');
     } catch {
       // Ignore if file doesn't exist
     }
@@ -349,7 +552,7 @@ export class SessionManager {
 ${session.endTime ? `**Ended:** ${new Date(session.endTime).toLocaleString()}` : ''}
 
 ## Goals
-${session.goals.map((g, i) => `- [ ] ${g}`).join('\n')}
+${session.goals.map((g) => `- [ ] ${g}`).join('\n')}
 
 ## Progress
 
@@ -523,8 +726,11 @@ ${this.generateSummary(session)}
 
   /**
    * Get current Beads task
+   * NOTE: This only reads Beads metadata for session updates.
+   * Sessions are NEVER stored in .beads - they are always in .aikit/sessions
    */
   private async getCurrentBeadsTask(): Promise<{ id: string; status: string } | null> {
+    // STRICT SCOPE: Only read from .beads in current project path
     const beadsDir = join(this.projectPath, '.beads');
     try {
       const files = await readdir(beadsDir);
@@ -544,6 +750,7 @@ ${this.generateSummary(session)}
       }
       return null;
     } catch {
+      // .beads doesn't exist or not readable - that's OK, just return null
       return null;
     }
   }
