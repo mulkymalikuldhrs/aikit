@@ -15,6 +15,8 @@ import {
   listSessions,
   showSession,
   searchSessions,
+  resumeSession,
+  switchSession,
 } from '../helpers.js';
 
 /**
@@ -80,6 +82,22 @@ export function registerSessionCommand(program: Command): Command {
     .description('Search sessions by keyword')
     .action(async (query) => {
       await searchSessions(query);
+    });
+
+  // Resume a session
+  sessionCmd
+    .command('resume <sessionId>')
+    .description('Resume a past session (set as active)')
+    .action(async (sessionId) => {
+      await resumeSession(sessionId);
+    });
+
+  // Switch to a different session
+  sessionCmd
+    .command('use <sessionId>')
+    .description('Switch to a different session in current terminal')
+    .action(async (sessionId) => {
+      await switchSession(sessionId);
     });
 
   return sessionCmd;

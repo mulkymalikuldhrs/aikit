@@ -5,14 +5,14 @@ import { DefaultCommand } from './types';
  */
 export const SESSION_COMMANDS: DefaultCommand[] = [
   {
-    name: 'session:start',
+    name: 'session-start',
     description: 'Start a new development session',
     category: 'session',
-    usage: '/session:start [name]',
+    usage: '/session-start [name]',
     examples: [
-      '/session:start',
-      '/session:start authentication-refactor',
-      '/session:start "Add user profile feature"',
+      '/session-start',
+      '/session-start authentication-refactor',
+      '/session-start "Add user profile feature"',
     ],
     content: `Start a new development session to track your work.
 
@@ -20,47 +20,70 @@ export const SESSION_COMMANDS: DefaultCommand[] = [
 
 Session name: $ARGUMENTS
 
-1. **Create Session:**
-   - Generate session ID with timestamp
-   - Create session file in .aikit/sessions/
-   - Track active session in .current-session
-   - Capture initial git state
+**IMPORTANT - Scope Rules:**
+- Sessions are scoped to the CURRENT working directory
+- AIKit will NOT search parent directories for .aikit
+- If .aikit doesn't exist in current directory, you MUST run 'aikit init' first
+- Each directory needs its own .aikit if you want separate session tracking
 
-2. **Set Goals:**
+1. **Check Current Directory:**
+   - Verify .aikit exists in current directory (process.cwd())
+   - If not, inform user to run 'aikit init' first
+   - DO NOT search parent directories
+
+2. **Create Session:**
+   - Generate session ID with timestamp
+   - Create session file in .aikit/sessions/ (current directory only)
+   - Determine session tracker file:
+     * Try 'tty' command to get terminal identifier
+     * If 'tty' works, use .aikit/sessions/.current-<sanitized_tty>-session
+       (replace '/' with '-' in TTY path)
+     * If 'tty' fails with "not a tty", get parent PID using: ps -o ppid= -p $$
+       Use .aikit/sessions/.current-ppid-<PPID>-session
+       (each Claude Code window has unique PPID)
+   - Write session ID to the tracker file
+   - **Capture initial git state (scoped to current directory):**
+     * First check if .git exists in CURRENT directory (process.cwd())
+     * ONLY capture git state if .git exists in current directory
+     * DO NOT search parent directories for git repo
+     * If no .git in current directory, skip git state capture
+
+3. **Set Goals:**
    - Ask user for session goals if not provided
    - Document what you want to accomplish
    - Link to Beads task if active
 
-3. **Session Started:**
+4. **Session Started:**
    - Session ID: YYYY-MM-DD-HHMM[-name]
    - Status: active
    - Ready for updates
 
 ## What Gets Tracked
 - Session start time
-- Git branch and commits
-- Modified files
+- Git branch and commits (ONLY if .git exists in current directory)
+- Modified files (ONLY if .git exists in current directory)
 - Progress notes
 - Linked Beads task
 
 ## Session File Location
-.aikit/sessions/YYYY-MM-DD-HHMM[-name].md
+Current directory: .aikit/sessions/YYYY-MM-DD-HHMM[-name].md
+(Always relative to process.cwd(), never parent directories)
 
 ## Examples
 
 Start unnamed session:
 \`\`\`
-/session:start
+/session-start
 \`\`\`
 
 Start with descriptive name:
 \`\`\`
-/session:start auth-refactor
+/session-start auth-refactor
 \`\`\`
 
 Start with goal:
 \`\`\`
-/session:start "Implement OAuth 2.0"
+/session-start "Implement OAuth 2.0"
 Goals:
 - Add Google OAuth
 - Add JWT token handling
@@ -69,18 +92,18 @@ Goals:
 ## Notes
 - Session files are markdown with frontmatter
 - Sessions persist across AI conversations
-- Use /session:update to add progress notes
-- Use /session:end to close and summarize`,
+- Use /session-update to add progress notes
+- Use /session-end to close and summarize`,
   },
   {
-    name: 'session:update',
+    name: 'session-update',
     description: 'Add progress notes to current session',
     category: 'session',
-    usage: '/session:update [notes]',
+    usage: '/session-update [notes]',
     examples: [
-      '/session:update',
-      '/session:update Fixed authentication bug',
-      '/session:update "Added JWT middleware"',
+      '/session-update',
+      '/session-update Fixed authentication bug',
+      '/session-update "Added JWT middleware"',
     ],
     content: `Update the current session with progress notes.
 
@@ -89,19 +112,28 @@ Goals:
 Progress notes: $ARGUMENTS
 
 1. **Check Active Session:**
-   - Verify there's an active session
+   - Determine session tracker file:
+     * Try 'tty' command to get terminal identifier
+     * If 'tty' works, read .aikit/sessions/.current-<sanitized_tty>-session
+     * If 'tty' fails, get parent PID and read .aikit/sessions/.current-ppid-<PPID>-session
    - Load session file
 
 2. **Capture Current State:**
-   - Get current git branch
-   - Count git commits
-   - List modified files
-   - Check active Beads task
+   - **IMPORTANT - Git State Scope:**
+     * First check if .git exists in CURRENT directory (process.cwd())
+     * ONLY capture git state if .git exists in current directory
+     * DO NOT search parent directories for git repo
+     * If no .git in current directory, skip git state capture
+   - If .git exists in current directory:
+     * Get current git branch
+     * Count git commits
+     * List modified files
+   - Check active Beads task (from .beads directory if exists)
 
 3. **Add Update:**
    - Add timestamped update entry
    - Include your notes (or auto-generate)
-   - Include git state
+   - Include git state ONLY if .git exists in current directory
    - Include Beads task if active
 
 4. **Save Session:**
@@ -111,27 +143,25 @@ Progress notes: $ARGUMENTS
 ## What Gets Captured
 - Timestamp of update
 - Your progress notes
-- Current git branch
-- Number of commits
-- List of modified files
+- Git state (branch, commits, files) - ONLY if .git exists in current directory
 - Active Beads task (if any)
 
 ## Examples
 
 Auto-update (no notes):
 \`\`\`
-/session:update
+/session-update
 \`\`\`
 *Auto-generates summary of recent work*
 
 With specific notes:
 \`\`\`
-/session:update Fixed Next.js params issue
+/session-update Fixed Next.js params issue
 \`\`\`
 
 With detailed notes:
 \`\`\`
-/session:update "Implemented OAuth flow with Google provider. Added callback handler and token validation."
+/session-update "Implemented OAuth flow with Google provider. Added callback handler and token validation."
 \`\`\`
 
 ## Notes
@@ -141,11 +171,11 @@ With detailed notes:
 - Beads task automatically linked`,
   },
   {
-    name: 'session:end',
+    name: 'session-end',
     description: 'End current session with summary',
     category: 'session',
-    usage: '/session:end',
-    examples: ['/session:end'],
+    usage: '/session-end',
+    examples: ['/session-end'],
     content: `End the current session and generate a comprehensive summary.
 
 ## Workflow
@@ -175,7 +205,10 @@ With detailed notes:
    - Mark session as ended
    - Set end time
    - Save session file
-   - Clear .current-session tracker
+   - Determine session tracker file:
+     * Try 'tty' command to get terminal identifier
+     * If 'tty' works, clear .aikit/sessions/.current-<sanitized_tty>-session
+     * If 'tty' fails, get parent PID and clear .aikit/sessions/.current-ppid-<PPID>-session
 
 ## Summary Includes
 
@@ -230,17 +263,20 @@ Lessons:
 - Can start new session after ending`,
   },
   {
-    name: 'session:current',
+    name: 'session-current',
     description: 'Show current active session',
     category: 'session',
-    usage: '/session:current',
-    examples: ['/session:current'],
+    usage: '/session-current',
+    examples: ['/session-current'],
     content: `Display information about the current active session.
 
 ## Workflow
 
 1. **Check Active Session:**
-   - Read .current-session file
+   - Determine session tracker file:
+     * Try 'tty' command to get terminal identifier
+     * If 'tty' works, read .aikit/sessions/.current-<sanitized_tty>-session
+     * If 'tty' fails, get parent PID and read .aikit/sessions/.current-ppid-<PPID>-session
    - Load session data
 
 2. **Display Session Info:**
@@ -280,8 +316,8 @@ Beads Task:
 - bead-001 (in-progress)
 
 Commands:
-/session:update [notes] - Add progress
-/session:end - Close session
+/session-update [notes] - Add progress
+/session-end - Close session
 \`\`\`
 
 ## Notes
@@ -290,18 +326,18 @@ Commands:
 - Displays recent progress`,
   },
   {
-    name: 'session:list',
+    name: 'session-list',
     description: 'List all sessions',
     category: 'session',
-    usage: '/session:list',
-    examples: ['/session:list'],
+    usage: '/session-list',
+    examples: ['/session-list'],
     content: `List all development sessions with summaries.
 
 ## Workflow
 
 1. **Scan Sessions Directory:**
    - Find all .md files in .aikit/sessions/
-   - Exclude .current-session
+   - Exclude all .current-*-session files (terminal trackers)
 
 2. **Sort by Date:**
    - Newest sessions first
@@ -344,16 +380,16 @@ Total: 3 sessions
 - Shows both active and ended sessions
 - Most recent sessions first
 - Active session highlighted
-- Use /session:show <id> for details`,
+- Use /session-show <id> for details`,
   },
   {
-    name: 'session:show',
+    name: 'session-show',
     description: 'Show details of a specific session',
     category: 'session',
-    usage: '/session:show <session-id>',
+    usage: '/session-show <session-id>',
     examples: [
-      '/session:show 2025-01-02-1430',
-      '/session:show 2025-01-02-1430-auth-refactor',
+      '/session-show 2025-01-02-1430',
+      '/session-show 2025-01-02-1430-auth-refactor',
     ],
     content: `Display full details of a specific session.
 
@@ -424,14 +460,14 @@ Successfully refactored authentication system...
 - Full session details displayed`,
   },
   {
-    name: 'session:search',
+    name: 'session-search',
     description: 'Search sessions by keyword',
     category: 'session',
-    usage: '/session:search <query>',
+    usage: '/session-search <query>',
     examples: [
-      '/session:search oauth',
-      '/session:search "jwt"',
-      '/session:search authentication',
+      '/session-search oauth',
+      '/session-search "jwt"',
+      '/session-search authentication',
     ],
     content: `Search for sessions matching a keyword.
 
@@ -452,7 +488,7 @@ Search query: $ARGUMENTS
 
 3. **Show Actions:**
    - List matching sessions
-   - Suggest /session:show for details
+   - Suggest /session-show for details
 
 ## Example Output
 \`\`\`
@@ -482,14 +518,14 @@ Total: 2 matching sessions
 - Use partial IDs too`,
   },
   {
-    name: 'session:resume',
+    name: 'session-resume',
     description: 'Resume a past session (load context)',
     category: 'session',
-    usage: '/session:resume <session-id>',
+    usage: '/session-resume <session-id>',
     examples: [
-      '/session:resume latest',
-      '/session:resume 2025-01-02-1430',
-      '/session:resume 2025-01-02-1430-auth-refactor',
+      '/session-resume latest',
+      '/session-resume 2025-01-02-1430',
+      '/session-resume 2025-01-02-1430-auth-refactor',
     ],
     content: `Load context from a past session to resume work.
 

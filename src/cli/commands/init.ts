@@ -17,6 +17,7 @@ import { paths } from '../../utils/paths.js';
 import { initializeConfig, installCliTool } from '../helpers.js';
 import { AgentManager } from '../../core/agents.js';
 import { CommandRunner } from '../../core/commands.js';
+import { SessionManager } from '../../core/sessions.js';
 import { createAdapter } from '../../platform/adapters.js';
 
 export function registerInitCommand(program: Command): void {
@@ -118,6 +119,15 @@ export function registerInitCommand(program: Command): void {
           logger.info('Setting up git hooks...');
           await beads.setupGitHooks();
           logger.success('✓ Git hooks configured');
+
+          // Step 5.6: Initialize sessions folder
+          const sessionManager = new SessionManager();
+          await sessionManager.init();
+          logger.success('✓ Sessions folder initialized');
+
+          // Step 5.7: Initialize terminal session file
+          const { tracker } = await sessionManager.initTerminalSession();
+          logger.success(`✓ Session tracker initialized (${tracker.split('/').pop()})`);
 
           // Step 6: Install platform-specific commands
           const adapter = createAdapter(selectedPlatform);

@@ -1,6 +1,7 @@
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import { compare, gt, valid } from 'semver';
 
 /**
  * Get package version from package.json
@@ -20,3 +21,24 @@ export function getVersion(): string {
   }
 }
 
+/**
+ * Compare two versions using semver
+ * @returns 1 if v1 > v2, -1 if v1 < v2, 0 if equal
+ */
+export function compareVersions(v1: string, v2: string): number {
+  return compare(v1, v2);
+}
+
+/**
+ * Check if v1 is greater than v2
+ */
+export function isGreaterThan(v1: string, v2: string): boolean {
+  return gt(v1, v2);
+}
+
+/**
+ * Validate if version string is valid semver
+ */
+export function isValidVersion(version: string): boolean {
+  return valid(version) !== null;
+}
