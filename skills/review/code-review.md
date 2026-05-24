@@ -116,3 +116,9 @@ Check:
 - Only pointing out problems (acknowledge good work)
 - Not explaining why something is an issue
 - Suggesting rewrites when small fixes work
+
+---
+
+> **Contact:** Mulky Malikul Dhaher — [mulkymalikuldhaher@email.com](mailto:mulkymalikuldhaher@email.com)
+>
+> **Disclaimer:** This project is for Education Purpose only. Risiko apapun tidak kita tanggung. (We are not responsible for any risks or damages.)
